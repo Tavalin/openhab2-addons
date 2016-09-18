@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<thing:thing-descriptions bindingId="spotifyconnect" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:thing="http://eclipse.org/smarthome/schemas/thing-description/v1.0.0"
+	xsi:schemaLocation="http://eclipse.org/smarthome/schemas/thing-description/v1.0.0 http://eclipse.org/smarthome/schemas/thing-description-1.0.0.xsd">
+
+	<bridge-type id="spotifyd-http">
+		<label>spotifyd-http web server</label>
+		<description>A spotifyd-http web server.</description>
+		<config-description>
+			<parameter name="host" type="text" required="true">
+				<context>network-address</context>
+				<label>Host address</label>
+				<description>The host address of the spotifyd-http server.</description>
+				<required>true</required>
+			</parameter>
+			<parameter name="port" type="integer" required="true">
+				<context>network-address</context>
+				<label>Port</label>
+				<description>The port of the spotifyd-http server.</description>
+				<required>true</required>
+				<default>6767</default>
+			</parameter>
+		</config-description>
+	</bridge-type>
+
+	<thing-type id="player">
+		<supported-bridge-type-refs>
+			<bridge-type-ref id="spotifyd-http" />
+		</supported-bridge-type-refs>
+		<label>Spotify Connect Player</label>
+		<description>A Spotify Connect player.</description>
+
+		<channels>
+			<!-- <channel id="title" typeId="currenttitle" /> -->
+			<channel id="control" typeId="control" />
+		</channels>
+
+		<config-description>
+			<parameter name="deviceId" type="text" required="true">
+				<label>Device Id</label>
+				<description>The Device Id identifies a specific Spotify Connect player.</description>
+			</parameter>
+		</config-description>
+
+	</thing-type>
+
+	<channel-type id="control">
+		<item-type>Player</item-type>
+		<label>Control</label>
+		<description>Control the Spotify Connect player, e.g. PLAY/PAUSE/PREV/NEXT</description>
+		<category>Player</category>
+	</channel-type>
+
+
+	<!-- <channel-type id="currenttitle"> <item-type>String</item-type> <label>Current Title</label> <description>Title of the 
+		song currently playing</description> </channel-type> <channel-type id="currentalbum"> <item-type>String</item-type> <label>Current 
+		Album</label> <description>Name of the album currently playing</description> </channel-type> <channel-type id="currentartist"> 
+		<item-type>String</item-type> <label>Current Artist</label> <description>Name of the artist currently playing</description> 
+		</channel-type> <channel-type id="currenttitle"> <item-type>String</item-type> <label>Current Title</label> <description>Title 
+		of the song currently playing</description> </channel-type> -->
+
+
+</thing:thing-descriptions>
