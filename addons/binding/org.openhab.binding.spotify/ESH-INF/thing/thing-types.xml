@@ -53,7 +53,7 @@
                 <context>clientId</context>
                 <required>true</required>
                 <label>Spotify Application Client ID</label>
-                <description>This is the Client ID provided by Spotify when you add a new Application for OpenHAB/SmartHome to your Spotify Account.</description>
+                <description>This is the Client ID provided by Spotify when you add a new Application for OpenHAB/SmartHome to your Spotify Account. Go to https://developer.spotify.com/</description>
             </parameter>
             <parameter name="clientSecret" type="text">
                 <context>clientSecret</context>
@@ -75,9 +75,10 @@
             <parameter name="refreshToken" type="text">
                 <context>refreshToken</context>
                 <required>false</required>
+                <default>Go to http://[your.server:port]/connectspotify/ to authorize</default>
                 <label>Spotify Client Authorization Refresh Token</label>
                 <description>
-                    This is the refresh token provided by Spotify when you authorize yourself with the Web API and grant the required scope accesses.
+                    This is the refresh token provided by Spotify when you authorize yourself with the Web API and grant the required scope access. After authorization this field will hold the refreshToken used to re-authorize with the Web API.
                 </description>
             </parameter>
         </config-description>
@@ -105,6 +106,7 @@
             <channel id="devicePlay" typeId="devicePlay"/>
             <channel id="deviceVolume" typeId="deviceVolume"/>
             <channel id="deviceActive" typeId="deviceActive"/>
+            <channel id="deviceRestricted" typeId="deviceRestricted"/>
             <channel id="deviceShuffle" typeId="deviceShuffle"/>
         </channels>
         
@@ -252,7 +254,7 @@
     </channel-type>    
     <channel-type id="currentlyPlayedArtistType">
         <item-type>String</item-type>
-        <label>Spotify Artist Name</label>
+        <label>Spotify Artist Type</label>
         <description>Channel for Spotify currently played artist type</description>
     </channel-type>    
  
@@ -294,6 +296,12 @@
         <item-type>Switch</item-type>
         <label>Spotify Connect Device Active</label>
         <description>Channel reports active status for device</description>
+        <category>Switch</category>
+    </channel-type>
+    <channel-type id="deviceRestricted">
+        <item-type>Switch</item-type>
+        <label>Spotify Connect Device Restricted</label>
+        <description>Channel reports whether the device is restricted or not - can it be controlled or not?</description>
         <category>Switch</category>
     </channel-type>
 

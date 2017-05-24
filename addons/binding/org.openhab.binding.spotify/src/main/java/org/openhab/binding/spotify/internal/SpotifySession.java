@@ -134,24 +134,21 @@ public class SpotifySession implements Runnable {
                         .content(new StringContentProvider(content), contentType)
                         .timeout(HTTP_CLIENT_TIMEOUT, TimeUnit.SECONDS).send();
 
-                logger.debug("Response Code: {}", response.getStatus());
+                logger.trace("Response Code: {}", response.getStatus());
+                logger.trace("Response Data: {}", response.getContentAsString());
 
-                if (response.getStatus() == 429) {
-                    String retryAfter = response.getHeaders().get("Retry-After");
-                    logger.warn(
-                            "Spotify Web API returned code 429 (rate limit exceeded). Retry After {} seconds. Decrease polling interval of bridge! Going to sleep...",
-                            retryAfter);
+                if (response.getStatus() == 200) {
+                    Gson gson = new Gson();
+                    SpotifyWebAPIAuthResult test = gson.fromJson(response.getContentAsString(),
+                            SpotifyWebAPIAuthResult.class);
+                    accessToken = test.accessToken;
+                    tokenValidity = test.getExpiresIn();
+                    return test;
+                } else if (response.getStatus() == 400) {
+                    logger.error("Response: {} - verify that Spotify Client ID and Client Secret are correct!",
+                            response.getContentAsString());
 
-                    Thread.sleep(Integer.parseInt(retryAfter) * 1000);
                 }
-
-                Gson gson = new Gson();
-                SpotifyWebAPIAuthResult test = gson.fromJson(response.getContentAsString(),
-                        SpotifyWebAPIAuthResult.class);
-                accessToken = test.accessToken;
-                tokenValidity = test.getExpiresIn();
-                return test;
-
             } catch (InterruptedException | TimeoutException | ExecutionException e) {
                 logger.warn("Error calling Spotify Web API for authorization - no accessToken!", e);
             }
@@ -182,23 +179,17 @@ public class SpotifySession implements Runnable {
                         .content(new StringContentProvider(content), contentType)
                         .timeout(HTTP_CLIENT_TIMEOUT, TimeUnit.SECONDS).send();
 
-                logger.debug("Response Code: {}", response.getStatus());
+                logger.trace("Response Code: {}", response.getStatus());
+                logger.trace("Response Data: {}", response.getContentAsString());
 
-                if (response.getStatus() == 429) {
-                    String retryAfter = response.getHeaders().get("Retry-After");
-                    logger.warn(
-                            "Spotify Web API returned code 429 (rate limit exceeded). Retry After {} seconds. Decrease polling interval of bridge! Going to sleep...",
-                            retryAfter);
-
-                    Thread.sleep(Integer.parseInt(retryAfter) * 1000);
+                if (response.getStatus() == 200) {
+                    Gson gson = new Gson();
+                    SpotifyWebAPIRefreshResult test = gson.fromJson(response.getContentAsString(),
+                            SpotifyWebAPIRefreshResult.class);
+                    accessToken = test.accessToken;
+                    tokenValidity = test.getExpiresIn();
+                    return;
                 }
-
-                Gson gson = new Gson();
-                SpotifyWebAPIRefreshResult test = gson.fromJson(response.getContentAsString(),
-                        SpotifyWebAPIRefreshResult.class);
-                accessToken = test.accessToken;
-                tokenValidity = test.getExpiresIn();
-                return;
             } catch (InterruptedException | TimeoutException | ExecutionException e) {
                 logger.warn("Error calling Spotify Web API for token refresh - no accessToken!", e);
             }
@@ -230,7 +221,7 @@ public class SpotifySession implements Runnable {
         }
 
         // TODO: Find a more suitable to retrieve token validity if it changes after being scheduled? Scheduling refresh
-        // 10 seconds before expiring.
+        // 10 seconds before expiring. Can this make use of existing thread/threadpools?
         tokenValidity -= 10;
         future = scheduledExecutorService.scheduleWithFixedDelay(this, tokenValidity, tokenValidity, TimeUnit.SECONDS);
 
@@ -253,7 +244,7 @@ public class SpotifySession implements Runnable {
      * @return response from call
      */
     private String callWebAPI(String method, String url, String requestData) {
-
+        logger.trace("Calling Spotify WebAPI at {}:{} with:\n{}", method, url, requestData);
         Properties headers = new Properties();
         headers.setProperty("Authorization", "Bearer " + accessToken);
         headers.setProperty("Accept", "application/json");
@@ -269,8 +260,10 @@ public class SpotifySession implements Runnable {
                         .content(new StringContentProvider(requestData), contentType)
                         .timeout(HTTP_CLIENT_TIMEOUT, TimeUnit.SECONDS).send();
 
-                logger.debug("Response Code: {}", response.getStatus());
+                logger.trace("Response Code: {}", response.getStatus());
+                logger.trace("Response Data: {}", response.getContentAsString());
 
+                // Response Code 429 means requests rate limits exceeded.
                 if (response.getStatus() == 429) {
                     String retryAfter = response.getHeaders().get("Retry-After");
                     logger.warn(
@@ -278,9 +271,9 @@ public class SpotifySession implements Runnable {
                             retryAfter);
 
                     Thread.sleep(Integer.parseInt(retryAfter));
+                } else {
+                    return response.getContentAsString();
                 }
-
-                return response.getContentAsString();
             } catch (InterruptedException | TimeoutException | ExecutionException e) {
                 logger.warn("Error refreshing spotify web api token!", e);
             }
@@ -330,22 +323,22 @@ public class SpotifySession implements Runnable {
 
     public void nextTrack() {
         String url = "https://api.spotify.com/v1/me/player/next";
-        callWebAPI("PUT", url, "");
+        callWebAPI("POST", url, "");
     }
 
     public void nextTrack(String deviceId) {
         String url = "https://api.spotify.com/v1/me/player/next?device_id=%s";
-        callWebAPI("PUT", String.format(url, deviceId), "");
+        callWebAPI("POST", String.format(url, deviceId), "");
     }
 
     public void previousTrack() {
         String url = "https://api.spotify.com/v1/me/player/previous";
-        callWebAPI("PUT", url, "");
+        callWebAPI("POST", url, "");
     }
 
     public void previousTrack(String deviceId) {
         String url = "https://api.spotify.com/v1/me/player/previous?device_id=%s";
-        callWebAPI("PUT", String.format(url, deviceId), "");
+        callWebAPI("POST", String.format(url, deviceId), "");
     }
 
     public void setVolume(int volume) {
