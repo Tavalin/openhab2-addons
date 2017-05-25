@@ -98,6 +98,7 @@ public class SpotifyAuthServlet extends HttpServlet implements SpotifyAuthServic
      * @param httpService the shared http service
      */
     protected void unsetHttpService(HttpService httpService) {
+        httpService.unregister(WEBAPP_ALIAS);
         httpService.unregister(SERVLET_NAME);
         this.httpService = null;
     }
