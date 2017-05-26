@@ -18,8 +18,6 @@ import java.util.HashMap;
 import java.util.Hashtable;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
@@ -72,11 +70,7 @@ public class SpotifyHandler extends ConfigStatusBridgeHandler {
     private Integer pollingInterval = 5;
     private Map<String, SpotifyDeviceHandler> knownDevices = new HashMap<String, SpotifyDeviceHandler>();
 
-    ScheduledExecutorService executor = Executors.newScheduledThreadPool(1);
-    @SuppressWarnings("rawtypes")
-    ScheduledFuture future = null;
-
-    // TODO: See if the creation of thread here can be replaced with existing threads & thread pools.
+    private ScheduledFuture<?> future = null;
     private Runnable pollingJob = () -> {
         try {
             logger.debug("Polling Spotify for status");
@@ -91,7 +85,6 @@ public class SpotifyHandler extends ConfigStatusBridgeHandler {
             // doesn't work?
             throw (ex);
         }
-
     };
 
     public SpotifyHandler(Bridge bridge, SpotifyHandlerFactory handlerFactory) {
@@ -142,7 +135,9 @@ public class SpotifyHandler extends ConfigStatusBridgeHandler {
         logger.debug("Received channel: {}, command: {}", channelUID, command);
 
         if (RefreshType.REFRESH.equals(command)) {
-            executor.execute(pollingJob);
+            if (future == null) {
+                future = scheduler.schedule(pollingJob, 0, TimeUnit.SECONDS);
+            }
         } else {
 
             String channel = channelUID.getId();
@@ -286,7 +281,7 @@ public class SpotifyHandler extends ConfigStatusBridgeHandler {
             future.cancel(false);
         }
 
-        future = executor.scheduleWithFixedDelay(pollingJob, 0, intervall, TimeUnit.SECONDS);
+        future = scheduler.scheduleWithFixedDelay(pollingJob, 0, intervall, TimeUnit.SECONDS);
 
     }
 
