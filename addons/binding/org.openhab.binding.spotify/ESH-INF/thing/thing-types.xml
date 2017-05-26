@@ -145,22 +145,29 @@
     </channel-type>
     <channel-type id="trackPlayer">
         <item-type>Player</item-type>
-        <label>Spotify Track Player Control</label>
+        <label>Player Control</label>
         <description>Channel for Spotify player control</description>
     </channel-type>
     <channel-type id="trackRepeat">
         <item-type>String</item-type>
-        <label>Spotify Track Player Repeat Mode</label>
+        <label>Repeat Mode</label>
         <description>Channel for Spotify player repeat mode</description>
+        <state>
+            <options>
+                <option value="off">Off</option>
+                <option value="context">Playlist</option>
+                <option value="track">Track</option>
+            </options>
+        </state>
     </channel-type>
     <channel-type id="trackShuffle">
         <item-type>Switch</item-type>
-        <label>Spotify Track Player Shuffle</label>
+        <label>Shuffle</label>
         <description>Channel for Spotify player shuffle mode</description>
     </channel-type>
     <channel-type id="currentlyPlayedTrackName">
         <item-type>String</item-type>
-        <label>Spotify Track Name</label>
+        <label>Track Name</label>
         <description>Channel for Spotify currently played track name</description>
     </channel-type>
     <channel-type id="currentlyPlayedTrackType" advanced="true">
@@ -180,12 +187,12 @@
     </channel-type>
     <channel-type id="currentlyPlayedTrackDurationFmt">
         <item-type>String</item-type>
-        <label>Spotify Track Duration Formatted</label>
+        <label>Track Duration</label>
         <description>Channel for Spotify currently played track duration formatted (m:ss)</description>
     </channel-type>
     <channel-type id="currentlyPlayedTrackProgressFmt">
         <item-type>String</item-type>
-        <label>Spotify Track Progress Formatted</label>
+        <label>Elapsed Duration</label>
         <description>Channel for Spotify currently played track progress formatted (m:ss)</description>
     </channel-type>
     <channel-type id="currentlyPlayedTrackNumber" advanced="true">
@@ -222,7 +229,7 @@
     </channel-type>
     <channel-type id="currentlyPlayedAlbumName">
         <item-type>String</item-type>
-        <label>Spotify Album Name</label>
+        <label>Album Name</label>
         <description>Channel for Spotify currently played album name</description>
     </channel-type>    
     <channel-type id="currentlyPlayedAlbumType" advanced="true">
@@ -249,7 +256,7 @@
     </channel-type>
     <channel-type id="currentlyPlayedArtistName">
         <item-type>String</item-type>
-        <label>Spotify Artist Name</label>
+        <label>Artist Name</label>
         <description>Channel for Spotify currently played artist name</description>
     </channel-type>    
     <channel-type id="currentlyPlayedArtistType" advanced="true">
