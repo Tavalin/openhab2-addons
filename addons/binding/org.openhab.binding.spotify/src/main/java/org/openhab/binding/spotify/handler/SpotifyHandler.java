@@ -41,6 +41,7 @@ import org.eclipse.smarthome.core.thing.ThingStatusDetail;
 import org.eclipse.smarthome.core.thing.binding.ConfigStatusBridgeHandler;
 import org.eclipse.smarthome.core.thing.binding.ThingHandler;
 import org.eclipse.smarthome.core.types.Command;
+import org.eclipse.smarthome.core.types.RefreshType;
 import org.eclipse.smarthome.core.types.State;
 import org.openhab.binding.spotify.discovery.SpotifyDeviceDiscovery;
 import org.openhab.binding.spotify.internal.SpotifyAuthService;
@@ -74,6 +75,24 @@ public class SpotifyHandler extends ConfigStatusBridgeHandler {
     ScheduledExecutorService executor = Executors.newScheduledThreadPool(1);
     @SuppressWarnings("rawtypes")
     ScheduledFuture future = null;
+
+    // TODO: See if the creation of thread here can be replaced with existing threads & thread pools.
+    private Runnable pollingJob = () -> {
+        try {
+            logger.debug("Polling Spotify for status");
+            updateDeviceStatus();
+
+            // TODO: Determine if the player info query should be seprated from the device status query.
+            updatePlayerInfo();
+
+        } catch (Exception ex) {
+            logger.error("Exception caught in anonymous scheduled runnable task. This task will now stop.", ex);
+            // TODO: best practice to ignore the exception in this thread or be nice and let the thread end as it
+            // doesn't work?
+            throw (ex);
+        }
+
+    };
 
     public SpotifyHandler(Bridge bridge, SpotifyHandlerFactory handlerFactory) {
         super(bridge);
@@ -122,75 +141,80 @@ public class SpotifyHandler extends ConfigStatusBridgeHandler {
     public void handleCommand(ChannelUID channelUID, Command command) {
         logger.debug("Received channel: {}, command: {}", channelUID, command);
 
-        String channel = channelUID.getId();
+        if (RefreshType.REFRESH.equals(command)) {
+            executor.execute(pollingJob);
+        } else {
 
-        switch (channel) {
-            case CHANNEL_TRACKID:
-            case CHANNEL_TRACKURI:
-            case CHANNEL_TRACKHREF:
-                if (command instanceof StringType) {
-                    spotifySession.playTrack(((StringType) command).toString());
-                }
-                break;
-            case CHANNEL_TRACKPLAYER:
-                if (command instanceof PlayPauseType) {
-                    if (command.equals(PlayPauseType.PLAY)) {
-                        spotifySession.playActiveTrack();
-                        setChannelValue(CHANNEL_TRACKPLAYER, PlayPauseType.PLAY);
-                    } else if (command.equals(PlayPauseType.PAUSE)) {
-                        spotifySession.pauseActiveTrack();
-                        setChannelValue(CHANNEL_TRACKPLAYER, PlayPauseType.PAUSE);
-                    }
-                }
-                if (command instanceof OnOffType) {
-                    if (command.equals(OnOffType.ON)) {
-                        spotifySession.playActiveTrack();
-                        setChannelValue(CHANNEL_TRACKPLAYER, PlayPauseType.PLAY);
-                    } else if (command.equals(OnOffType.OFF)) {
-                        spotifySession.pauseActiveTrack();
-                        setChannelValue(CHANNEL_TRACKPLAYER, PlayPauseType.PAUSE);
-                    }
-                }
-                if (command instanceof NextPreviousType) {
-                    if (command.equals(NextPreviousType.NEXT)) {
-                        spotifySession.nextTrack();
-                    } else if (command.equals(NextPreviousType.PREVIOUS)) {
-                        spotifySession.previousTrack();
-                    }
+            String channel = channelUID.getId();
 
-                }
-                if (command instanceof StringType) {
-                    String cmd = ((StringType) command).toString();
-                    if (cmd.equalsIgnoreCase("play")) {
-                        spotifySession.playActiveTrack();
-                        setChannelValue(CHANNEL_TRACKPLAYER, PlayPauseType.PLAY);
-                    } else if (cmd.equalsIgnoreCase("pause")) {
-                        spotifySession.pauseActiveTrack();
-                        setChannelValue(CHANNEL_TRACKPLAYER, PlayPauseType.PAUSE);
-                    } else if (cmd.equalsIgnoreCase("next")) {
-                        spotifySession.nextTrack();
-                    } else if (cmd.equalsIgnoreCase("prev") || cmd.equalsIgnoreCase("previous")) {
-                        spotifySession.previousTrack();
+            switch (channel) {
+                case CHANNEL_TRACKID:
+                case CHANNEL_TRACKURI:
+                case CHANNEL_TRACKHREF:
+                    if (command instanceof StringType) {
+                        spotifySession.playTrack(((StringType) command).toString());
                     }
+                    break;
+                case CHANNEL_TRACKPLAYER:
+                    if (command instanceof PlayPauseType) {
+                        if (command.equals(PlayPauseType.PLAY)) {
+                            spotifySession.playActiveTrack();
+                            setChannelValue(CHANNEL_TRACKPLAYER, PlayPauseType.PLAY);
+                        } else if (command.equals(PlayPauseType.PAUSE)) {
+                            spotifySession.pauseActiveTrack();
+                            setChannelValue(CHANNEL_TRACKPLAYER, PlayPauseType.PAUSE);
+                        }
+                    }
+                    if (command instanceof OnOffType) {
+                        if (command.equals(OnOffType.ON)) {
+                            spotifySession.playActiveTrack();
+                            setChannelValue(CHANNEL_TRACKPLAYER, PlayPauseType.PLAY);
+                        } else if (command.equals(OnOffType.OFF)) {
+                            spotifySession.pauseActiveTrack();
+                            setChannelValue(CHANNEL_TRACKPLAYER, PlayPauseType.PAUSE);
+                        }
+                    }
+                    if (command instanceof NextPreviousType) {
+                        if (command.equals(NextPreviousType.NEXT)) {
+                            spotifySession.nextTrack();
+                        } else if (command.equals(NextPreviousType.PREVIOUS)) {
+                            spotifySession.previousTrack();
+                        }
 
-                }
-                break;
-            case CHANNEL_DEVICESHUFFLE:
-                if (command instanceof OnOffType) {
-                    spotifySession.setShuffleState(command.equals(OnOffType.OFF) ? "false" : "true");
-                }
-                break;
-            case CHANNEL_DEVICEVOLUME:
-                if (command instanceof DecimalType) {
-                    PercentType volume = new PercentType(((DecimalType) command).intValue());
-                    spotifySession.setVolume(volume.intValue());
-                    setChannelValue(CHANNEL_DEVICEVOLUME, volume);
-                } else if (command instanceof PercentType) {
-                    PercentType volume = (PercentType) command;
-                    spotifySession.setVolume(volume.intValue());
-                    setChannelValue(CHANNEL_DEVICEVOLUME, volume);
-                }
-                break;
+                    }
+                    if (command instanceof StringType) {
+                        String cmd = ((StringType) command).toString();
+                        if (cmd.equalsIgnoreCase("play")) {
+                            spotifySession.playActiveTrack();
+                            setChannelValue(CHANNEL_TRACKPLAYER, PlayPauseType.PLAY);
+                        } else if (cmd.equalsIgnoreCase("pause")) {
+                            spotifySession.pauseActiveTrack();
+                            setChannelValue(CHANNEL_TRACKPLAYER, PlayPauseType.PAUSE);
+                        } else if (cmd.equalsIgnoreCase("next")) {
+                            spotifySession.nextTrack();
+                        } else if (cmd.equalsIgnoreCase("prev") || cmd.equalsIgnoreCase("previous")) {
+                            spotifySession.previousTrack();
+                        }
+
+                    }
+                    break;
+                case CHANNEL_DEVICESHUFFLE:
+                    if (command instanceof OnOffType) {
+                        spotifySession.setShuffleState(command.equals(OnOffType.OFF) ? "false" : "true");
+                    }
+                    break;
+                case CHANNEL_DEVICEVOLUME:
+                    if (command instanceof DecimalType) {
+                        PercentType volume = new PercentType(((DecimalType) command).intValue());
+                        spotifySession.setVolume(volume.intValue());
+                        setChannelValue(CHANNEL_DEVICEVOLUME, volume);
+                    } else if (command instanceof PercentType) {
+                        PercentType volume = (PercentType) command;
+                        spotifySession.setVolume(volume.intValue());
+                        setChannelValue(CHANNEL_DEVICEVOLUME, volume);
+                    }
+                    break;
+            }
         }
     }
 
@@ -262,24 +286,7 @@ public class SpotifyHandler extends ConfigStatusBridgeHandler {
             future.cancel(false);
         }
 
-        // TODO: See if the creation of thread here can be replaced with existing threads & thread pools.
-        Runnable task = () -> {
-            try {
-                logger.debug("Polling Spotify for status");
-                updateDeviceStatus();
-
-                // TODO: Determine if the player info query should be seprated from the device status query.
-                updatePlayerInfo();
-
-            } catch (Exception ex) {
-                logger.error("Exception caught in anonymous scheduled runnable task. This task will now stop.", ex);
-                // TODO: best practice to ignore the exception in this thread or be nice and let the thread end as it
-                // doesn't work?
-                throw (ex);
-            }
-
-        };
-        future = executor.scheduleWithFixedDelay(task, 0, intervall, TimeUnit.SECONDS);
+        future = executor.scheduleWithFixedDelay(pollingJob, 0, intervall, TimeUnit.SECONDS);
 
     }
 
